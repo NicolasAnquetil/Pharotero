@@ -26,12 +26,12 @@ PharoteroCollection class >> neoJsonMapping: mapper [
 		for: PharoteroCollection do: [ :mapping | 
 	      mapping mapInstVar: #key.
 			(mapping mapInstVar: #name to: #data)
-				valueSchema: #name.
+				valueSchema: #dataName.
 			mapping mapAccessor: #jsonMeta to: #meta
 		].
 
 	mapper
-		for: #name customDo: [ :mapping |
+		for: #dataName customDo: [ :mapping |
 			mapping decoder: [ :dict | dict at: #name ]
 		]
 

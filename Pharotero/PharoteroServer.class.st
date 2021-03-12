@@ -52,7 +52,18 @@ PharoteroServer >> baseUrlDefaultGroup [
 
 { #category : #private }
 PharoteroServer >> get: aStringQuery [
-	^ znServer get: baseURL , aStringQuery , '?v=3&key=' , self accessKey
+	| hasQuestionMark urlQuery |
+	hasQuestionMark := (aStringQuery indexOf: $?) > 0.
+	urlQuery := String streamContents: [ :st |
+		st
+			<< baseURL ;
+			<< aStringQuery ;
+			<< 	(hasQuestionMark ifTrue: [ $& ] ifFalse: [ $? ]) ;
+			<<	'v=3&key=' ;
+			<< self accessKey.
+	].
+		
+	^ znServer get: urlQuery
 ]
 
 { #category : #api }
@@ -97,6 +108,15 @@ PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
 			subCollections
 				flatCollect: [ :coll | self getSubCollectionsFor: coll ]
 		]
+]
+
+{ #category : #private }
+PharoteroServer >> getTemplate: documentType [
+	^(NeoJSONReader
+		on: (self get: 'new?itemType=' , documentType) readStream)
+		for: #ArrayOfZoteroItems customDo: [ :mapping |
+			mapping listOfElementSchema: PharoteroItem ];
+		nextAs: #ArrayOfZoteroItems.
 ]
 
 { #category : #initialization }
