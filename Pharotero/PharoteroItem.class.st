@@ -8,12 +8,34 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'key',
-		'parentCollection'
+		'parentCollection',
+		'itemType',
+		'title',
+		'authors',
+		'abstract',
+		'date',
+		'url',
+		'publisher'
 	],
 	#category : #'Pharotero-entities'
 }
 
 { #category : #accessing }
 PharoteroItem class >> neoJsonMapping: mapper [
-	self notYetImplemented 
+	"key parentCollection itemType title authors abstract date url publisher"
+	mapper
+		for: PharoteroItem do: [ :mapping | 
+	      mapping mapInstVars: #(key itemType title url publisher).
+			mapping mapInstVar: #abstract to: #abstractNote.
+			mapping mapAccessor: #jsonAutors to: #creators
+		].
+
+	"
+	(mapping mapInstVar: #name to: #data)
+		valueSchema: #dataName.
+	mapper
+		for: #dataName customDo: [ :mapping |
+			mapping decoder: [ :dict | dict at: #name ]
+		]"
+
 ]

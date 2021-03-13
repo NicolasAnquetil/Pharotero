@@ -89,18 +89,14 @@ PharoteroServer >> getAllSubCollectionsFor: aZoteroCollection [
 PharoteroServer >> getCollections: query [
 	^(NeoJSONReader
 		on: (self get: query) readStream)
-		for: #ArrayOfZoteroCollection customDo: [ :mapping |
-			mapping listOfElementSchema: PharoteroCollection ];
-		nextAs: #ArrayOfZoteroCollection.
+		nextListAs: PharoteroCollection
 ]
 
 { #category : #private }
 PharoteroServer >> getItems: query [
 	^(NeoJSONReader
 		on: (self get: query) readStream)
-		for: #ArrayOfZoteroItems customDo: [ :mapping |
-			mapping listOfElementSchema: PharoteroItem ];
-		nextAs: #ArrayOfZoteroItems.
+		nextListAs: PharoteroItem
 ]
 
 { #category : #private }
@@ -112,6 +108,11 @@ PharoteroServer >> getItemsFor: aZoteroCollection [
 			items do: [ :coll | coll parentCollection: aZoteroCollection ].
 			^items
 		]
+]
+
+{ #category : #private }
+PharoteroServer >> getNewItem: itemType [
+	^self get: 'items/new?itemType=' , itemType
 ]
 
 { #category : #api }
