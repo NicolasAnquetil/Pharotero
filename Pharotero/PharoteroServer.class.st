@@ -50,6 +50,11 @@ PharoteroServer >> baseUrlDefaultGroup [
 	self url: PharoteroServer zoteroURL , 'groups/' , self rmodGroupIdentifier , '/'
 ]
 
+{ #category : #accessing }
+PharoteroServer >> defaultKey [
+	self accessKey: 'QpEsv2IZKPBb1K87A9taV8WE'
+]
+
 { #category : #private }
 PharoteroServer >> get: aStringQuery [
 	| hasQuestionMark urlQuery |
@@ -66,11 +71,18 @@ PharoteroServer >> get: aStringQuery [
 	^ znServer get: urlQuery
 ]
 
-{ #category : #api }
+{ #category : #queries }
 PharoteroServer >> getAllCollections [
 	^self topCollections
-		flatCollect: [ :coll | self getSubCollectionsFor: coll ]
+		flatCollect: [ :coll | self getAllSubCollectionsFor: coll ]
 
+]
+
+{ #category : #api }
+PharoteroServer >> getAllSubCollectionsFor: aZoteroCollection [
+	^((self getSubCollectionsFor: aZoteroCollection)
+		flatCollect: [ :coll | self getAllSubCollectionsFor: coll ])
+			, {aZoteroCollection}		 
 ]
 
 { #category : #private }
@@ -95,18 +107,21 @@ PharoteroServer >> getItems: query [
 PharoteroServer >> getItemsFor: aZoteroCollection [
 	^aZoteroCollection nbItems = 0
 		ifTrue: [ #() ]
-		ifFalse: [ self itemsOf: aZoteroCollection key ]
+		ifFalse: [ | items |
+			items := self itemsOfKey: aZoteroCollection key.
+			items do: [ :coll | coll parentCollection: aZoteroCollection ].
+			^items
+		]
 ]
 
 { #category : #api }
 PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
 	^aZoteroCollection nbSubCollections = 0
-		ifTrue: [ { aZoteroCollection } ]
-		ifFalse: [ | subCollections |
-			subCollections := self subCollectionsOf: aZoteroCollection key.
-			subCollections do: [ :coll | coll parentCollection: aZoteroCollection ].
-			subCollections
-				flatCollect: [ :coll | self getSubCollectionsFor: coll ]
+		ifTrue: [ #() ]
+		ifFalse: [
+			(self subCollectionsOfKey: aZoteroCollection key)
+				do: [ :coll | coll parentCollection: aZoteroCollection ] ;
+				yourself
 		]
 ]
 
@@ -131,8 +146,8 @@ PharoteroServer >> initialize [
 ]
 
 { #category : #queries }
-PharoteroServer >> itemsOf: collectionKey [
-	^self getCollections: 'collections/' , collectionKey , '/items'
+PharoteroServer >> itemsOfKey: aCollectionKey [
+	^self getCollections: 'collections/' , aCollectionKey , '/items'.
 ]
 
 { #category : #accessing }
@@ -142,8 +157,8 @@ PharoteroServer >> rmodGroupIdentifier [
 ]
 
 { #category : #queries }
-PharoteroServer >> subCollectionsOf: collectionKey [
-	^self getCollections: 'collections/' , collectionKey , '/collections'
+PharoteroServer >> subCollectionsOfKey: aCollectionKey [
+	^self getCollections: 'collections/' , aCollectionKey , '/collections'
 ]
 
 { #category : #queries }
@@ -153,12 +168,6 @@ PharoteroServer >> topCollections [
 
 { #category : #accessing }
 PharoteroServer >> url: aString [
-	"(aString beginsWith: 'http://')
-	ifTrue: [ url := aString copyFrom: 8 to: aString size]
-	ifFalse: [url := aString ].
-
-	(url endsWith: '/')
-	ifFalse: [ url := url , '/' ]."
 	baseURL := aString.
 	znServer url: aString
 ]
