@@ -48,13 +48,28 @@ PharoteroItem >> abstract [
 ]
 
 { #category : #accessing }
+PharoteroItem >> abstract: aString [
+	abstract := aString
+]
+
+{ #category : #accessing }
 PharoteroItem >> authors [
 	^ authors
 ]
 
 { #category : #accessing }
+PharoteroItem >> authors: aList [
+	authors := aList
+]
+
+{ #category : #accessing }
 PharoteroItem >> date [
 	^ date
+]
+
+{ #category : #accessing }
+PharoteroItem >> date: aString [
+	date := aString
 ]
 
 { #category : #accessing }
@@ -93,6 +108,16 @@ PharoteroItem >> title [
 ]
 
 { #category : #accessing }
+PharoteroItem >> title: aString [
+	title := aString
+]
+
+{ #category : #accessing }
 PharoteroItem >> url [
 	^ url
+]
+
+{ #category : #accessing }
+PharoteroItem >> url:aString [
+	url := aString
 ]
