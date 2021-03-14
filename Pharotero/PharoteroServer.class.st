@@ -50,6 +50,13 @@ PharoteroServer >> baseUrlDefaultGroup [
 	self url: PharoteroServer zoteroURL , 'groups/' , self rmodGroupIdentifier , '/'
 ]
 
+{ #category : #queries }
+PharoteroServer >> collectionNamed: aString [
+	^self getAllCollections
+		detect: [ :coll | coll name = aString ]
+		ifNone: [ nil ]
+]
+
 { #category : #accessing }
 PharoteroServer >> defaultKey [
 	self accessKey: 'QpEsv2IZKPBb1K87A9taV8WE'
