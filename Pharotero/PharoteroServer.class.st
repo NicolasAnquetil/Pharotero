@@ -18,7 +18,7 @@ Class {
 		'znServer',
 		'accessKey'
 	],
-	#category : #Pharotero
+	#category : #'Pharotero-entities'
 }
 
 { #category : #'instance creation' }

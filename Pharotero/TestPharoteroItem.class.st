@@ -37,3 +37,33 @@ TestPharoteroItem >> testFromJSON [
 	self assert: pharoteroItem date 				 equals: '2021-03-10'.
 	self assert: pharoteroItem parentCollection equals: '9876WXYZ'.
 ]
+
+{ #category : #tests }
+TestPharoteroItem >> testToJSON [
+	| pharoteroItem |
+	pharoteroItem := PharoteroItem new 
+		key: 'ABCD1234' ;
+		itemType: 'document' ;
+		authors: { PharoteroAuthor firstName: 'John' lastName: 'Doe' } ;
+		title: 'Something about nothing' ;
+		abstract: 'Nothing happened and this is all good and well' ;
+		date: '2021-03-10' ;
+		parentCollection: '9876WXYZ' ;
+		yourself.
+		
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"key":"ABCD1234"').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"itemType":"document"').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"creators":[{"creatorType":"author","firstName":"John","lastName":"Doe"}]').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"title":"Something about nothing"').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"abstractNote":"Nothing happened and this is all good and well"').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"date":"2021-03-10"').
+	self assert: ((NeoJSONWriter toString: pharoteroItem)
+		includesSubstring: '"collections":["9876WXYZ"]').
+
+]

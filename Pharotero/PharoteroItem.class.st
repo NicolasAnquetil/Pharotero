@@ -76,6 +76,11 @@ PharoteroItem >> itemType [
 ]
 
 { #category : #accessing }
+PharoteroItem >> itemType: aString [
+	itemType := aString 
+]
+
+{ #category : #accessing }
 PharoteroItem >> jsonCollection [
 	"must return an array of collection keys (strings)"
 	^self parentCollectionKey
@@ -98,6 +103,11 @@ PharoteroItem >> jsonCollection: jsonCollections [
 { #category : #accessing }
 PharoteroItem >> key [
 	^ key
+]
+
+{ #category : #accessing }
+PharoteroItem >> key: aString [
+	key := aString 
 ]
 
 { #category : #accessing }
