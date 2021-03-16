@@ -63,19 +63,8 @@ PharoteroServer >> defaultKey [
 ]
 
 { #category : #private }
-PharoteroServer >> get: aStringQuery [
-	| hasQuestionMark urlQuery |
-	hasQuestionMark := (aStringQuery indexOf: $?) > 0.
-	urlQuery := String streamContents: [ :st |
-		st
-			<< baseURL ;
-			<< aStringQuery ;
-			<< 	(hasQuestionMark ifTrue: [ $& ] ifFalse: [ $? ]) ;
-			<<	'v=3&key=' ;
-			<< self accessKey.
-	].
-		
-	^ znServer get: urlQuery
+PharoteroServer >> get: aStringQuery [		
+	^ znServer get: (self queryWithAccessKey: aStringQuery)
 ]
 
 { #category : #queries }
@@ -117,7 +106,7 @@ PharoteroServer >> getItemsFor: aZoteroCollection [
 	^aZoteroCollection nbItems = 0
 		ifTrue: [ #() ]
 		ifFalse: [ | items |
-			items := self itemsOfKey: aZoteroCollection key.
+			items := self getItems: (self queryForItemsOfKey: aZoteroCollection key).
 			items do: [ :coll | coll parentCollection: aZoteroCollection ].
 			^items
 		]
@@ -133,7 +122,7 @@ PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
 	^aZoteroCollection nbSubCollections = 0
 		ifTrue: [ #() ]
 		ifFalse: [
-			(self subCollectionsOfKey: aZoteroCollection key)
+			(self getCollections: (self queryForSubCollectionsOfKey: aZoteroCollection key))
 				do: [ :coll | coll parentCollection: aZoteroCollection ] ;
 				yourself
 		]
@@ -159,20 +148,40 @@ PharoteroServer >> initialize [
 		yourself
 ]
 
+{ #category : #'as yet unclassified' }
+PharoteroServer >> putItem: pharoteroItem inCollection: pharoteroCollection [
+	^znServer put: (self queryWithAccessKey: 'items/') contents: ''
+]
+
 { #category : #queries }
-PharoteroServer >> itemsOfKey: aCollectionKey [
-	^self getItems: 'collections/' , aCollectionKey , '/items'.
+PharoteroServer >> queryForItemsOfKey: aCollectionKey [
+	^'collections/' , aCollectionKey , '/items'.
+]
+
+{ #category : #queries }
+PharoteroServer >> queryForSubCollectionsOfKey: aCollectionKey [
+	^'collections/' , aCollectionKey , '/collections'
+]
+
+{ #category : #private }
+PharoteroServer >> queryWithAccessKey: aStringQuery [
+	| hasQuestionMark |
+	hasQuestionMark := (aStringQuery indexOf: $?) > 0.
+
+	String streamContents: [ :st |
+		st
+			<< baseURL ;
+			<< aStringQuery ;
+			<< 	(hasQuestionMark ifTrue: [ $& ] ifFalse: [ $? ]) ;
+			<<	'v=3&key=' ;
+			<< self accessKey.
+	]
 ]
 
 { #category : #accessing }
 PharoteroServer >> rmodGroupIdentifier [
 	"RMod group identifier"
 	^ '2068125'
-]
-
-{ #category : #queries }
-PharoteroServer >> subCollectionsOfKey: aCollectionKey [
-	^self getCollections: 'collections/' , aCollectionKey , '/collections'
 ]
 
 { #category : #queries }
