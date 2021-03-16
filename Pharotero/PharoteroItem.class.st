@@ -22,24 +22,22 @@ Class {
 
 { #category : #accessing }
 PharoteroItem class >> neoJsonMapping: mapper [
-	"form the #data field of a JSON Zotero item, creates a PharoteroItem
-	 instance variables #key, #itemType, #title, #url, #publisher are mapped directly to correponding JSON fields
-	 instance variable #abstract is mapped to JSON field #abstractNote
-	 instance variable #authors is mapped to JSON field #creators (a list of creators)
-	    a JSON #creator has 3 fields: #firstName, #lastName, and #creatorType which should always be 'author', we ignore this last one and make a NeoJSONObject with the first 2 fields.
-	    and the resulting list of NeoJSONObject is stored into instance variable #authors"
+	"mapping from the #data field of a JSON Zotero item to a PharoteroItem
+	instance variables #key, #itemType, #title, #url, #publisher are mapped directly to correponding JSON fields
+	instance variable #abstract is mapped to JSON field #abstractNote
+	instance variable #authors is mapped to JSON field #creators (a list of PharoteroAuthor)
+	instance variable #collection (not appearing here) is mapped to JSON field #collections through specialized 'accessors' #jsonCollection"
 	mapper
 		for: PharoteroItem do: [ :mapping | 
 	      mapping mapInstVars: #(key itemType title url publisher date).
 			mapping mapInstVar: #abstract to: #abstractNote.
 			(mapping mapInstVar: #authors to: #creators)
 				valueSchema: #listOfCreators.
+			mapping mapAccessor: #jsonCollection to: #collections
 		] ;
 		for: #listOfCreators customDo: [ :mapping |
-			mapping listOfElementSchema: NeoJSONObject .
-		] ;
-		for: NeoJSONObject do: [ :mapping |
-				mapping mapAccessors: #(firstName lastName) ]
+			mapping listOfElementSchema: PharoteroAuthor .
+		]
 ]
 
 { #category : #accessing }
@@ -78,6 +76,26 @@ PharoteroItem >> itemType [
 ]
 
 { #category : #accessing }
+PharoteroItem >> jsonCollection [
+	"must return an array of collection keys (strings)"
+	^self parentCollectionKey
+		ifNil: [ #() ]
+		ifNotNil: [ :aString | { aString } ]
+]
+
+{ #category : #accessing }
+PharoteroItem >> jsonCollection: jsonCollections [
+	"#jsonCollections is an array of collecxtion keys (strings)
+	#parentCollection can be a string or a PharoteroCollection"
+	jsonCollections
+		ifEmpty: [ ^self ].
+	(self parentCollectionKey = jsonCollections first)
+		ifTrue: [ ^self ].
+	self parentCollection: jsonCollections first
+
+]
+
+{ #category : #accessing }
 PharoteroItem >> key [
 	^ key
 ]
@@ -88,8 +106,15 @@ PharoteroItem >> parentCollection [
 ]
 
 { #category : #accessing }
-PharoteroItem >> parentCollection: anObject [
-	parentCollection := anObject
+PharoteroItem >> parentCollection: aString [
+	parentCollection := aString
+]
+
+{ #category : #accessing }
+PharoteroItem >> parentCollectionKey [
+	self parentCollection ifNil: [ ^ nil ].
+	self parentCollection isString ifTrue: [ ^ self parentCollection ].
+	^self parentCollection key
 ]
 
 { #category : #accessing }

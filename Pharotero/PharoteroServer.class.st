@@ -168,7 +168,7 @@ PharoteroServer >> queryWithAccessKey: aStringQuery [
 	| hasQuestionMark |
 	hasQuestionMark := (aStringQuery indexOf: $?) > 0.
 
-	String streamContents: [ :st |
+	^String streamContents: [ :st |
 		st
 			<< baseURL ;
 			<< aStringQuery ;
