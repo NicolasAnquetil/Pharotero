@@ -14,25 +14,16 @@ Class {
 	#name : #PharoteroServer,
 	#superclass : #Object,
 	#instVars : [
-		'baseURL',
-		'znServer',
-		'accessKey'
+		'identifier',
+		'accessKey',
+		'userKind'
 	],
 	#category : #'Pharotero-entities'
 }
 
-{ #category : #'instance creation' }
-PharoteroServer class >> rmodGroupLibrary [
-	| instance |
-	instance := self new.
-	instance baseUrlDefaultGroup.
-	^ instance 
-		
-]
-
 { #category : #accessing }
 PharoteroServer class >> zoteroURL [
-	^ 'https://api.zotero.org/'
+	^ 'https://api.zotero.org'
 ]
 
 { #category : #accessing }
@@ -46,33 +37,21 @@ PharoteroServer >> accessKey: aString [
 ]
 
 { #category : #api }
-PharoteroServer >> baseUrlDefaultGroup [
-	self url: PharoteroServer zoteroURL , 'groups/' , self rmodGroupIdentifier , '/'
-]
-
-{ #category : #api }
-PharoteroServer >> baseUrlNicolas [
-	self url: PharoteroServer zoteroURL , 'users/' , self nicolasIdentifier , '/'
-]
-
-{ #category : #queries }
 PharoteroServer >> collectionNamed: aString [
 	^self getAllCollections
 		detect: [ :coll | coll name = aString ]
 		ifNone: [ nil ]
 ]
 
-{ #category : #settings }
-PharoteroServer >> defaultKey [
-	self accessKey: 'QpEsv2IZKPBb1K87A9taV8WE'
-]
-
 { #category : #private }
-PharoteroServer >> get: aStringQuery [		
-	^ znServer get: (self queryWithAccessKey: aStringQuery)
+PharoteroServer >> get: aStringQuery [
+	^ZnClient new
+		contentReader: [ :entity | entity contents ] ;
+		enforceHttpSuccess: true ;
+		get: (self urlForQuery: aStringQuery)
 ]
 
-{ #category : #queries }
+{ #category : #api }
 PharoteroServer >> getAllCollections [
 	^self topCollections
 		flatCollect: [ :coll | self getAllSubCollectionsFor: coll ]
@@ -106,22 +85,6 @@ PharoteroServer >> getItems: query [
 
 ]
 
-{ #category : #private }
-PharoteroServer >> getItemsFor: aZoteroCollection [
-	^aZoteroCollection nbItems = 0
-		ifTrue: [ #() ]
-		ifFalse: [ | items |
-			items := self getItems: (self queryForItemsOfKey: aZoteroCollection key).
-			items do: [ :coll | coll parentCollection: aZoteroCollection ].
-			^items
-		]
-]
-
-{ #category : #private }
-PharoteroServer >> getNewItem: itemType [
-	^self get: 'items/new?itemType=' , itemType
-]
-
 { #category : #api }
 PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
 	^aZoteroCollection nbSubCollections = 0
@@ -133,36 +96,48 @@ PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
 		]
 ]
 
+{ #category : #accessing }
+PharoteroServer >> identifier [
+	^identifier
+]
+
+{ #category : #accessing }
+PharoteroServer >> identifier: anObject [
+	identifier := anObject 
+]
+
 { #category : #private }
-PharoteroServer >> getTemplate: documentType [
-	^(NeoJSONReader
-		on: (self get: 'new?itemType=' , documentType) readStream)
-		for: #ArrayOfZoteroItems customDo: [ :mapping |
-			mapping listOfElementSchema: PharoteroItem ];
-		nextAs: #ArrayOfZoteroItems.
+PharoteroServer >> identity [
+	^self userKind , '/' , self identifier
 ]
 
-{ #category : #initialization }
-PharoteroServer >> initialize [
-	znServer := ZnClient new
+{ #category : #api }
+PharoteroServer >> itemsIn: aZoteroCollection [
+	^aZoteroCollection nbItems = 0
+		ifTrue: [ #() ]
+		ifFalse: [ | items |
+			items := self getItems: (self queryForItemsOfKey: aZoteroCollection key).
+			items do: [ :coll | coll parentCollection: aZoteroCollection ].
+			^items
+		]
+]
+
+{ #category : #api }
+PharoteroServer >> newItem: itemType [
+	^ZnClient new
 		contentReader: [ :entity | entity contents ] ;
-		"contentWriter: [ :data |
-			ZnEntity with: (NeoJSONWriter toString: data) type: ZnMimeType applicationJson ];"
-		enforceHttpSuccess: true;
-		yourself
+		enforceHttpSuccess: true ;
+		get: ( PharoteroServer zoteroURL , '/items/new?itemType=' , itemType)
 ]
 
 { #category : #settings }
-PharoteroServer >> nicolasIdentifier [
-	^ '4572669'
-]
-
-{ #category : #settings }
-PharoteroServer >> nicolasKey [
+PharoteroServer >> nicolasIdentity [
+	self userKind: 'users'.
+	self identifier: '4572669'.
 	self accessKey: 'f3kySrbb1npXJEkqi7C6l5CL'
 ]
 
-{ #category : #private }
+{ #category : #api }
 PharoteroServer >> putItem: pharoteroItem [
 	| znEntity jsonObject |
 	jsonObject := { {'data' -> pharoteroItem} asDictionary }.
@@ -170,7 +145,7 @@ PharoteroServer >> putItem: pharoteroItem [
 	znEntity contentType: ZnMimeType applicationJson.
 
 	^ZnClient new
-		url: ('https://api.zotero.org/users/' , self nicolasIdentifier , '/items?key=' , self accessKey) ;
+		url: (self urlForQuery: 'items') ;
 		entity: znEntity ;
 		post ;
 		response
@@ -186,14 +161,29 @@ PharoteroServer >> queryForSubCollectionsOfKey: aCollectionKey [
 	^'collections/' , aCollectionKey , '/collections'
 ]
 
+{ #category : #settings }
+PharoteroServer >> rmodIdentity [
+	self userKind: 'groups'.
+	self identifier: '2068125'.
+	self accessKey: 'QpEsv2IZKPBb1K87A9taV8WE'
+]
+
+{ #category : #api }
+PharoteroServer >> topCollections [
+	^self getCollections: 'collections/top'
+]
+
 { #category : #private }
-PharoteroServer >> queryWithAccessKey: aStringQuery [
+PharoteroServer >> urlForQuery: aStringQuery [
 	| hasQuestionMark |
 	hasQuestionMark := (aStringQuery indexOf: $?) > 0.
 
 	^String streamContents: [ :st |
 		st
-			<< baseURL ;
+			<< PharoteroServer zoteroURL ;
+			<< '/' ;
+			<< self identity ;
+			<< '/' ;
 			<< aStringQuery ;
 			<< 	(hasQuestionMark ifTrue: [ $& ] ifFalse: [ $? ]) ;
 			<<	'v=3&key=' ;
@@ -201,19 +191,12 @@ PharoteroServer >> queryWithAccessKey: aStringQuery [
 	]
 ]
 
-{ #category : #settings }
-PharoteroServer >> rmodGroupIdentifier [
-	"RMod group identifier"
-	^ '2068125'
-]
-
-{ #category : #queries }
-PharoteroServer >> topCollections [
-	^self getCollections: 'collections/top'
+{ #category : #accessing }
+PharoteroServer >> userKind [
+	^userKind 
 ]
 
 { #category : #accessing }
-PharoteroServer >> url: aString [
-	baseURL := aString.
-	znServer url: aString
+PharoteroServer >> userKind: aString [ 
+	userKind := aString 
 ]
