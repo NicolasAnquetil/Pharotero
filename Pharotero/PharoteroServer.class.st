@@ -45,9 +45,14 @@ PharoteroServer >> accessKey: aString [
 	accessKey := aString
 ]
 
-{ #category : #accessing }
+{ #category : #api }
 PharoteroServer >> baseUrlDefaultGroup [
 	self url: PharoteroServer zoteroURL , 'groups/' , self rmodGroupIdentifier , '/'
+]
+
+{ #category : #api }
+PharoteroServer >> baseUrlNicolas [
+	self url: PharoteroServer zoteroURL , 'users/' , self nicolasIdentifier , '/'
 ]
 
 { #category : #queries }
@@ -57,7 +62,7 @@ PharoteroServer >> collectionNamed: aString [
 		ifNone: [ nil ]
 ]
 
-{ #category : #accessing }
+{ #category : #settings }
 PharoteroServer >> defaultKey [
 	self accessKey: 'QpEsv2IZKPBb1K87A9taV8WE'
 ]
@@ -141,16 +146,34 @@ PharoteroServer >> getTemplate: documentType [
 PharoteroServer >> initialize [
 	znServer := ZnClient new
 		contentReader: [ :entity | entity contents ] ;
-		contentWriter: [ :data |
-			self notYetImplemented 
-			"ZnEntity with: (NeoJSONWriter toString: data) type: ZnMimeType applicationJson" ];
+		"contentWriter: [ :data |
+			ZnEntity with: (NeoJSONWriter toString: data) type: ZnMimeType applicationJson ];"
 		enforceHttpSuccess: true;
 		yourself
 ]
 
-{ #category : #'as yet unclassified' }
-PharoteroServer >> putItem: pharoteroItem inCollection: pharoteroCollection [
-	^znServer put: (self queryWithAccessKey: 'items/') contents: ''
+{ #category : #settings }
+PharoteroServer >> nicolasIdentifier [
+	^ '4572669'
+]
+
+{ #category : #settings }
+PharoteroServer >> nicolasKey [
+	self accessKey: 'f3kySrbb1npXJEkqi7C6l5CL'
+]
+
+{ #category : #private }
+PharoteroServer >> putItem: pharoteroItem [
+	| znEntity jsonObject |
+	jsonObject := { {'data' -> pharoteroItem} asDictionary }.
+	znEntity := ZnEntity text: (NeoJSONWriter toString: jsonObject).
+	znEntity contentType: ZnMimeType applicationJson.
+
+	^ZnClient new
+		url: ('https://api.zotero.org/users/' , self nicolasIdentifier , '/items?key=' , self accessKey) ;
+		entity: znEntity ;
+		post ;
+		response
 ]
 
 { #category : #queries }
@@ -178,7 +201,7 @@ PharoteroServer >> queryWithAccessKey: aStringQuery [
 	]
 ]
 
-{ #category : #accessing }
+{ #category : #settings }
 PharoteroServer >> rmodGroupIdentifier [
 	"RMod group identifier"
 	^ '2068125'
