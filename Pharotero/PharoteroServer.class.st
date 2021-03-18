@@ -43,6 +43,33 @@ PharoteroServer >> collectionNamed: aString [
 		ifNone: [ nil ]
 ]
 
+{ #category : #api }
+PharoteroServer >> desktopClientIsUp [
+	^[(ZnClient new
+		url: 'http://127.0.0.1:23119/connector/ping' ;
+		get ;
+		response) status = 200]
+	on: ConnectionTimedOut
+	do: [ false ] .
+]
+
+{ #category : #api }
+PharoteroServer >> desktopCurrentCollection [
+	| znEntity jsonResponse |
+	znEntity := ZnEntity text: '{"X-Zotero-Connector-API-Version":"2"}'.
+	znEntity contentType: ZnMimeType applicationJson.
+
+	jsonResponse := ZnClient new
+		url: 'http://127.0.0.1:23119/connector/getSelectedCollection' ;
+		entity: znEntity ;
+		post ;
+		response.
+
+	jsonResponse status = 200
+	ifFalse: [ ^ nil ].
+	^(NeoJSONReader fromString: jsonResponse entity string) at: #name
+]
+
 { #category : #private }
 PharoteroServer >> get: aStringQuery [
 	^ZnClient new
