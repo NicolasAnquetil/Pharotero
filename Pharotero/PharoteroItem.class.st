@@ -15,7 +15,8 @@ Class {
 		'abstract',
 		'date',
 		'url',
-		'publisher'
+		'publisher',
+		'comment'
 	],
 	#category : #'Pharotero-entities'
 }
@@ -25,12 +26,14 @@ PharoteroItem class >> neoJsonMapping: mapper [
 	"mapping from the #data field of a JSON Zotero item to a PharoteroItem
 	instance variables #key, #itemType, #title, #url, #publisher are mapped directly to correponding JSON fields
 	instance variable #abstract is mapped to JSON field #abstractNote
+	instance variable #comment is mapped to JSON field #extra
 	instance variable #authors is mapped to JSON field #creators (a list of PharoteroAuthor)
 	instance variable #collection (not appearing here) is mapped to JSON field #collections through specialized 'accessors' #jsonCollection"
 	mapper
 		for: PharoteroItem do: [ :mapping | 
 	      mapping mapInstVars: #(key itemType title url publisher date).
 			mapping mapInstVar: #abstract to: #abstractNote.
+			mapping mapInstVar: #comment to: #extra.
 			(mapping mapInstVar: #authors to: #creators)
 				valueSchema: #listOfCreators.
 			mapping mapAccessor: #jsonCollection to: #collections
@@ -58,6 +61,16 @@ PharoteroItem >> authors [
 { #category : #accessing }
 PharoteroItem >> authors: aList [
 	authors := aList
+]
+
+{ #category : #accessing }
+PharoteroItem >> comment [
+	^ comment
+]
+
+{ #category : #accessing }
+PharoteroItem >> comment: anObject [
+	comment := anObject
 ]
 
 { #category : #accessing }
