@@ -8,10 +8,8 @@ Class {
 BaselineOfPharotero >> baseline: spec [
 	<baseline>
 	spec for: #common do: [
-		spec baseline: 'NeoJSONCore' with: [ spec
-			loads: 'Neo-JSON-Core';
-			repository: 'github://svenvc/NeoJSON/repository' ].
-		spec package: 'Pharotero'  with: [ spec requires: #('NeoJSONCore') ]				
+		spec baseline: 'NeoJSON' with: [ spec repository: 'github://svenvc/NeoJSON/repository' ].
+		spec package: 'Pharotero'  with: [ spec requires: #('NeoJSON') ]				
 	].
 
 ]
