@@ -16,7 +16,8 @@ Class {
 	#instVars : [
 		'identifier',
 		'accessKey',
-		'userKind'
+		'userKind',
+		'collectionsCache'
 	],
 	#category : #'Pharotero-entities'
 }
@@ -37,10 +38,34 @@ PharoteroServer >> accessKey: aString [
 ]
 
 { #category : #api }
+PharoteroServer >> addItem: pharoteroItem type: itemType in: collectionName [
+	| newItem |
+	newItem := (NeoJSONReader on: (self newItem: itemType) readStream)
+		nextAs: PharoteroItem.
+	newItem
+		copyFrom: pharoteroItem ;
+		parentCollection: (self collectionNamed: collectionName) ;
+		date: Date today yyyymmdd.
+	self putItem: newItem
+]
+
+{ #category : #api }
+PharoteroServer >> allCollections [
+	^self topCollections
+		flatCollect: [ :coll | coll getAllSubCollectionsFrom: self ]
+
+]
+
+{ #category : #api }
 PharoteroServer >> collectionNamed: aString [
-	^self getAllCollections
+	^self allCollections
 		detect: [ :coll | coll name = aString ]
 		ifNone: [ nil ]
+]
+
+{ #category : #accessing }
+PharoteroServer >> collectionsFilename [
+	^'/home/anquetil/.zotero/zoteroCollections.ston'
 ]
 
 { #category : #api }
@@ -70,7 +95,7 @@ PharoteroServer >> desktopCurrentCollection [
 	^(NeoJSONReader fromString: jsonResponse entity string) at: #name
 ]
 
-{ #category : #private }
+{ #category : #queries }
 PharoteroServer >> get: aStringQuery [
 	^ZnClient new
 		contentReader: [ :entity | entity contents ] ;
@@ -78,49 +103,10 @@ PharoteroServer >> get: aStringQuery [
 		get: (self urlForQuery: aStringQuery)
 ]
 
-{ #category : #api }
-PharoteroServer >> getAllCollections [
-	^self topCollections
-		flatCollect: [ :coll | self getAllSubCollectionsFor: coll ]
-
-]
-
-{ #category : #api }
-PharoteroServer >> getAllSubCollectionsFor: aZoteroCollection [
-	^((self getSubCollectionsFor: aZoteroCollection)
-		flatCollect: [ :coll | self getAllSubCollectionsFor: coll ])
-			, {aZoteroCollection}		 
-]
-
 { #category : #private }
 PharoteroServer >> getCollections: query [
-	^(NeoJSONReader
-		on: (self get: query) readStream)
-		nextListAs: PharoteroCollection
-]
+	^PharoteroCollection listFromJSON: (self get: query)
 
-{ #category : #private }
-PharoteroServer >> getItems: query [
-	"parsing JSON for Zotero items is a bit tricky as we are only interested in the #data filed of the JSON
-	 So we use a virtual object #TransferObject that gets the PharoteroItem into a #data instance variable and then we collect these PharoteroItems"
-	^((NeoJSONReader on: (self get: query) readStream)
-	for: #TransferObject do: [ :mapping |
-        mapping subjectClass: NeoJSONObject.
-        (mapping mapAccessor: #data) valueSchema: PharoteroItem ] ;
-	nextListAs: #TransferObject )
-	reject: [ :i | i itemType = 'note' ] thenCollect: #data.
-
-]
-
-{ #category : #api }
-PharoteroServer >> getSubCollectionsFor: aZoteroCollection [
-	^aZoteroCollection nbSubCollections = 0
-		ifTrue: [ #() ]
-		ifFalse: [
-			(self getCollections: (self queryForSubCollectionsOfKey: aZoteroCollection key))
-				do: [ :coll | coll parentCollection: aZoteroCollection ] ;
-				yourself
-		]
 ]
 
 { #category : #accessing }
@@ -138,18 +124,7 @@ PharoteroServer >> identity [
 	^self userKind , '/' , self identifier
 ]
 
-{ #category : #api }
-PharoteroServer >> itemsIn: aZoteroCollection [
-	^aZoteroCollection nbItems = 0
-		ifTrue: [ #() ]
-		ifFalse: [ | items |
-			items := self getItems: (self queryForItemsOfKey: aZoteroCollection key).
-			items do: [ :coll | coll parentCollection: aZoteroCollection ].
-			^items
-		]
-]
-
-{ #category : #api }
+{ #category : #queries }
 PharoteroServer >> newItem: itemType [
 	^ZnClient new
 		contentReader: [ :entity | entity contents ] ;
@@ -164,7 +139,7 @@ PharoteroServer >> nicolasIdentity [
 	self accessKey: 'f3kySrbb1npXJEkqi7C6l5CL'
 ]
 
-{ #category : #api }
+{ #category : #queries }
 PharoteroServer >> putItem: pharoteroItem [
 	| znEntity jsonObject |
 	jsonObject := { {'data' -> pharoteroItem} asDictionary }.
@@ -179,13 +154,21 @@ PharoteroServer >> putItem: pharoteroItem [
 ]
 
 { #category : #queries }
-PharoteroServer >> queryForItemsOfKey: aCollectionKey [
-	^'collections/' , aCollectionKey , '/items'.
-]
-
-{ #category : #queries }
 PharoteroServer >> queryForSubCollectionsOfKey: aCollectionKey [
 	^'collections/' , aCollectionKey , '/collections'
+]
+
+{ #category : #api }
+PharoteroServer >> reloadCollections [
+	collectionsCache := self collectionsFilename asFileReference
+		readStreamDo: [ :st | STON fromStream: st].
+
+]
+
+{ #category : #api }
+PharoteroServer >> resetCollections [
+	collectionsCache := nil
+
 ]
 
 { #category : #settings }
@@ -196,8 +179,18 @@ PharoteroServer >> rmodIdentity [
 ]
 
 { #category : #api }
+PharoteroServer >> saveCollections [
+	self collectionsFilename asFileReference writeStreamDo: [ :st |
+		st nextPutAll: (STON toString: collectionsCache) 
+	].
+
+]
+
+{ #category : #api }
 PharoteroServer >> topCollections [
-	^self getCollections: 'collections/top'
+	^collectionsCache
+		ifNil: [ collectionsCache := self getCollections: 'collections/top' ]
+
 ]
 
 { #category : #private }

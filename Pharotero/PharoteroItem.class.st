@@ -21,6 +21,19 @@ Class {
 	#category : #'Pharotero-entities'
 }
 
+{ #category : #'instance creation' }
+PharoteroItem class >> listFromJSON: jsonString [
+	"parsing JSON for Zotero items is a bit tricky as we are only interested in the #data filed of the JSON
+	 So we use a virtual object #TransferObject that gets the PharoteroItem into a #data instance variable and then we collect these PharoteroItems"
+	^((NeoJSONReader on: jsonString readStream)
+	for: #TransferObject do: [ :mapping |
+        mapping subjectClass: NeoJSONObject.
+        (mapping mapAccessor: #data) valueSchema: PharoteroItem ] ;
+	nextListAs: #TransferObject )
+	reject: [ :i | i itemType = 'note' ] thenCollect: #data.
+
+]
+
 { #category : #accessing }
 PharoteroItem class >> neoJsonMapping: mapper [
 	"mapping from the #data field of a JSON Zotero item to a PharoteroItem
@@ -71,6 +84,21 @@ PharoteroItem >> comment [
 { #category : #accessing }
 PharoteroItem >> comment: anObject [
 	comment := anObject
+]
+
+{ #category : #copying }
+PharoteroItem >> copyFrom: anotherItem [
+	abstract := anotherItem abstract.
+	authors := anotherItem authors.
+	comment := anotherItem comment.
+	date := anotherItem date.
+	itemType := anotherItem itemType.
+	key := anotherItem key.
+	parentCollection := anotherItem  parentCollection.
+	publisher := anotherItem publisher.
+	title := anotherItem title.
+	url := anotherItem url.
+	
 ]
 
 { #category : #accessing }

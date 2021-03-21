@@ -11,6 +11,7 @@ Class {
 	#instVars : [
 		'name',
 		'key',
+		'versionNumber',
 		'parentCollection',
 		'nbSubCollections',
 		'subCollections',
@@ -20,11 +21,18 @@ Class {
 	#category : #'Pharotero-entities'
 }
 
+{ #category : #'instance creation' }
+PharoteroCollection class >> listFromJSON: jsonString [
+	^(NeoJSONReader on: jsonString readStream)
+		nextListAs: PharoteroCollection
+]
+
 { #category : #accessing }
 PharoteroCollection class >> neoJsonMapping: mapper [
 	mapper
 		for: PharoteroCollection do: [ :mapping | 
 	      mapping mapInstVar: #key.
+			mapping mapInstVar: #versionNumber to: #version.
 			(mapping mapInstVar: #name to: #data)
 				valueSchema: #dataName.
 			mapping mapAccessor: #jsonMeta to: #meta
@@ -37,9 +45,43 @@ PharoteroCollection class >> neoJsonMapping: mapper [
 
 ]
 
+{ #category : #queries }
+PharoteroCollection >> getAllSubCollectionsFrom: pharoteroServer [
+	^((self getSubCollectionsFrom: pharoteroServer)
+		flatCollect: [ :coll | coll getAllSubCollectionsFrom: pharoteroServer ])
+			, {self}		 
+]
+
+{ #category : #queries }
+PharoteroCollection >> getSubCollectionsFrom: pharoteroServer [
+	nbSubCollections = 0 ifTrue: [ ^#() ].
+	nbSubCollections = self subCollections size  ifTrue: [ ^self subCollections ].
+	subCollections :=
+		(pharoteroServer getCollections: (pharoteroServer queryForSubCollectionsOfKey: key)).
+	subCollections do: [ :coll | coll parentCollection: self ].
+	^subCollections
+
+]
+
 { #category : #accessing }
 PharoteroCollection >> items [
 	^ items
+]
+
+{ #category : #accessing }
+PharoteroCollection >> items: anObject [
+	items := anObject
+]
+
+{ #category : #queries }
+PharoteroCollection >> itemsFrom: pharoteroServer [
+	^nbItems = 0
+		ifTrue: [ #() ]
+		ifFalse: [
+			items := PharoteroItem listFromJSON: (pharoteroServer get: 'collections/' , key , '/items').
+			items do: [ :coll | coll parentCollection: self ].
+			items
+		]
 ]
 
 { #category : #accessing }
@@ -80,8 +122,18 @@ PharoteroCollection >> nbItems [
 ]
 
 { #category : #accessing }
+PharoteroCollection >> nbItems: anObject [
+	nbItems := anObject
+]
+
+{ #category : #accessing }
 PharoteroCollection >> nbSubCollections [
 	^ nbSubCollections
+]
+
+{ #category : #accessing }
+PharoteroCollection >> nbSubCollections: anObject [
+	nbSubCollections := anObject
 ]
 
 { #category : #accessing }
@@ -96,5 +148,20 @@ PharoteroCollection >> parentCollection: anObject [
 
 { #category : #accessing }
 PharoteroCollection >> subCollections [
-	^ subCollections
+	^ subCollections ifNil: [ #() ]
+]
+
+{ #category : #accessing }
+PharoteroCollection >> subCollections: anObject [
+	subCollections := anObject
+]
+
+{ #category : #accessing }
+PharoteroCollection >> versionNumber [
+	^versionNumber
+]
+
+{ #category : #accessing }
+PharoteroCollection >> versionNumber: aNumber [
+	versionNumber := aNumber 
 ]
