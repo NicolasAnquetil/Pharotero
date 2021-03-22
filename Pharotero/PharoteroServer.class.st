@@ -19,8 +19,21 @@ Class {
 		'userKind',
 		'collectionsCache'
 	],
+	#classInstVars : [
+		'instance'
+	],
 	#category : #'Pharotero-entities'
 }
+
+{ #category : #accessing }
+PharoteroServer class >> instance [ 
+	^instance ifNil: [ instance := self new ]
+]
+
+{ #category : #accessing }
+PharoteroServer class >> resetInstance [ 
+	instance := nil
+]
 
 { #category : #accessing }
 PharoteroServer class >> zoteroURL [
