@@ -57,6 +57,7 @@ PharoteroServer >> addItem: pharoteroItem type: itemType in: collectionName [
 		nextAs: PharoteroItem.
 	newItem
 		copyFrom: pharoteroItem ;
+		itemType: itemType ;
 		parentCollection: (self collectionNamed: collectionName) ;
 		date: Date today yyyymmdd.
 	self putItem: newItem
@@ -163,7 +164,7 @@ PharoteroServer >> putItem: pharoteroItem [
 		url: (self urlForQuery: 'items') ;
 		entity: znEntity ;
 		post ;
-		response
+		response.
 ]
 
 { #category : #queries }
